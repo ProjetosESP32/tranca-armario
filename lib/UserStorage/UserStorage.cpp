@@ -1,19 +1,96 @@
 #include "UserStorage.hpp"
 #include <SPIFFS.h>
+#include <stddef.h>
+#include <string.h>
+
+size_t UserStorage::getNumberOfItems(fs::File &file)
+{
+  auto fileSize = file.size();
+
+  return fileSize / SIZE_OF_USERDATA;
+}
+
+void UserStorage::setup()
+{
+  SPIFFS.begin(true);
+}
+
+size_t UserStorage::getNumberOfUsers()
+{
+  auto file = SPIFFS.open(FILENAME, "rb");
+
+  return getNumberOfItems(file);
+}
+
+bool UserStorage::getUserByIndex(size_t index, UserData *_data)
+{
+  auto file = SPIFFS.open(FILENAME, "rb");
+  auto numberOfItems = this->getNumberOfItems(file);
+  auto expectedMinSize = (index + 1) * SIZE_OF_USERDATA;
+
+  if (!file.available() || numberOfItems == 0 || numberOfItems < expectedMinSize)
+  {
+    file.close();
+    return false;
+  };
+
+  UserData data;
+
+  file.seek(index * SIZE_OF_USERDATA, SeekSet);
+  file.readBytes((char *)&data, SIZE_OF_USERDATA);
+
+  if (data.id == -1)
+  {
+    file.close();
+    return false;
+  }
+
+  *_data = data;
+  file.close();
+  return true;
+}
+
+bool UserStorage::getUserById(int id, UserData *_data)
+{
+  auto file = SPIFFS.open(FILENAME, "rb");
+  auto numberOfItems = this->getNumberOfItems(file);
+
+  if (!file.available() || numberOfItems == 0)
+  {
+    file.close();
+    return false;
+  };
+
+  UserData data;
+
+  for (size_t i = 0; i < numberOfItems; i++)
+  {
+    file.readBytes((char *)&data, SIZE_OF_USERDATA);
+
+    if (data.id == id)
+    {
+      *_data = data;
+      file.close();
+      return true;
+    }
+  }
+
+  file.close();
+  return false;
+}
 
 void UserStorage::saveUser(const UserData &user)
 {
-  auto file = SPIFFS.open(FILENAME, "rwb");
-  auto fileSize = file.size();
+  auto file = SPIFFS.open(FILENAME, "rwb", true);
+  auto numberOfItems = this->getNumberOfItems(file);
 
-  if (fileSize > 0)
+  if (numberOfItems > 0)
   {
     bool isPositionSet = false;
-    auto numberOfItens = fileSize / SIZE_OF_USERDATA;
+    UserData data;
 
-    for (int i = 0; i < numberOfItens; i++)
+    for (size_t i = 0; i < numberOfItems; i++)
     {
-      UserData data;
       file.readBytes((char *)&data, SIZE_OF_USERDATA);
 
       if (data.id == -1 || data.id == user.id)
@@ -34,21 +111,20 @@ void UserStorage::saveUser(const UserData &user)
   file.close();
 }
 
-void UserStorage::deleteUserById(const int id)
+void UserStorage::deleteUserById(int id)
 {
   auto file = SPIFFS.open(FILENAME, "rwb");
-  auto fileSize = file.size();
+  auto numberOfItems = this->getNumberOfItems(file);
 
-  if (!file.available() || fileSize == 0)
+  if (!file.available() || numberOfItems == 0)
   {
     file.close();
     return;
   }
 
   UserData cleanData = {.id = -1};
-  auto numberOfItems = fileSize / SIZE_OF_USERDATA;
 
-  for (int i = 0; i < numberOfItems; i++)
+  for (size_t i = 0; i < numberOfItems; i++)
   {
     UserData readData;
     file.readBytes((char *)&readData, SIZE_OF_USERDATA);
@@ -64,27 +140,27 @@ void UserStorage::deleteUserById(const int id)
   file.close();
 }
 
-bool UserStorage::getUserById(const int id, UserData *_data)
+bool UserStorage::login(const char *username, const char *password)
 {
   auto file = SPIFFS.open(FILENAME, "rb");
-  auto fileSize = file.size();
+  auto numberOfItems = this->getNumberOfItems(file);
 
-  if (!file.available() || fileSize == 0)
+  if (!file.available() || numberOfItems == 0)
   {
     file.close();
     return false;
   };
 
   UserData data;
-  auto numberOfItems = fileSize / SIZE_OF_USERDATA;
 
-  for (int i = 0; i < numberOfItems; i++)
+  for (size_t i = 0; i < numberOfItems; i++)
   {
     file.readBytes((char *)&data, SIZE_OF_USERDATA);
 
-    if (data.id == id)
+    bool isValid = strcmp(username, data.username) == 0 && strcmp(password, data.password);
+
+    if (isValid)
     {
-      *_data = data;
       file.close();
       return true;
     }
