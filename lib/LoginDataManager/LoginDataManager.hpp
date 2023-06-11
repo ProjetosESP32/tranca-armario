@@ -21,20 +21,25 @@ private:
   uint8_t numberOfUsers;
   uint8_t numberOfUsersSaved;
 
+  void spiffsSave();
   int spiffsRead();
-  void removeUser(uint8_t id_remove);
-
 public:
   bool begin();
-  void spiffsSave();
+
   void subtractorValidity();
+
   int comparePasswords(String passwordTyped);
 
+  void removeUser(uint8_t id_remove);
+
   bool setNewUser(String name, String password, int validity);
+
   bool setValidityUser(int idUser, int newVal);
 
   int getNumberOfUsers();
+
   String getNameUser(int idUser);
+
   int getValidityUser(int idUser);
 
   void showUsers(); // debugging

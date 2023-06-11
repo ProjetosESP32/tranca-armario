@@ -10,6 +10,7 @@
 #include "LoginDataManager.hpp"
 #include "SPIFFS.h"
 
+
 void LoginDataManager::spiffsSave()
 {
   File file = SPIFFS.open("/logins.txt", FILE_WRITE);
@@ -74,6 +75,7 @@ void LoginDataManager::removeUser(uint8_t idRemove)
       LoginDataManager::userName[i] = LoginDataManager::userName[i + 1];
     }
   }
+  spiffsSave();
   numberOfUsers--;
 }
 
@@ -82,6 +84,7 @@ bool LoginDataManager::begin()
   bool feedback = true;
   if (!SPIFFS.begin())
   {
+    SPIFFS.format(); // Remover no código principal
     feedback = false;
   }
   LoginDataManager::numberOfUsers = LoginDataManager::spiffsRead();
@@ -115,7 +118,7 @@ void LoginDataManager::validityHandle(uint8_t hour, uint8_t minutes, uint8_t sec
   static int daybefore = -1;
   if (hour == 4 && minutes == 0 && seconds == 0 && day != daybefore)
   {
-    Serial.println("Passou");
+    //Serial.println("Passou");
     daybefore = day;
     for (int i = 0; i < LoginDataManager::numberOfUsers; i++)
     {

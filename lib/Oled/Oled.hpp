@@ -8,13 +8,14 @@
  */
 
 #include <Arduino.h>
-#include <Adafruit_SH1106.h>
-#include <Adafruit_GFX.h>
+#include "LoginDataManager.hpp"
 
-#ifndef _DISPLAY_HPP_
-#define _DISPLAY_HPP_
+#ifndef _OLED_HPP_
+#define _OLED_HPP_
 
-//Adafruit_SH1106 Oled(21, 22);
+#define NUMBER_OF_CHARACTERS 27
+#define NUMBER_OF_ROWS 3
+#define NUMBER_OF_COLUMNS 9
 
 constexpr unsigned char PROGMEM logoIfmt[] = {
     0x79, 0xfb, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfd, 0xfb, 0xf0, 0x00,
@@ -42,15 +43,70 @@ constexpr unsigned char PROGMEM logoIfmt[] = {
 class Oled
 {
 private:
-  void showTime(uint8_t second, uint8_t minute, uint8_t hour);
+
+  LoginDataManager *data;
+
+  const char alphabet[NUMBER_OF_CHARACTERS] = {
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+      'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+      's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '<'};
+
+  void showTime(uint8_t hour, uint8_t minute, uint8_t second);
+
   void showDate(uint8_t day, uint8_t month, uint16_t year);
 
+  int xCenterStringSize2(String stringCenter);
+
 public:
+  bool begin(LoginDataManager*);
+
   void showLogo();
-  bool begin();
-  void homeScreen(uint8_t second, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint16_t year, String labName);
-  void showMenuNames(uint8_t numberUsers, uint8_t idUserShow);
+
+  void showSpiffsFail();
+
+  void showRtcFail();
+
+  void showTypedKey(String typedPassword);
+
+  void showHomeScreen(uint8_t hour, uint8_t minute, uint8_t second, uint8_t day, uint8_t month, uint16_t year, String labName);
+
+  void showMenuNames(uint8_t idUserShow, bool resetBuffer = false);
+
+  void showTypedPassword(String typedPassword);
+
+  void showLoginAccepted(String User);
+
+  void showLockedLock(String typedPassword);
+
+  void showLoginDenied();
+
+  void showOpenDoor();
+
+  void showSettingsTitle();
+
   void showMenuConfig();
-  void showConfigDate();
+
+  void showControls();
+
+  void showConfigDate(uint8_t day, uint8_t month, uint16_t year);
+
+  void showConfigTime(uint8_t hour, uint8_t minute);
+
+  void wrongData();
+
+  void showVirtualKeyboardForSetName(String typedName, uint8_t highLightedKey);
+
+  char getAlphabetCharacter(uint8_t characterId);
+
+  void showSetPassword(String password);
+
+  void showSetExpirationDate(String expirationDate);
+
+  void showSetPasswordConfirmation(String password);
+
+  void showSetExpirationDateConfirmation(String expirationDate);
+
+  void confirmationDeleteUser(String nameUser);
+
 };
 #endif
