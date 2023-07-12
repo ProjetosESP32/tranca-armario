@@ -8,6 +8,7 @@
 #include "SPIFFS.h"
 #include <Wire.h>
 #include "RTClib.h"
+#include "DFRobotDFPlayerMini.h"
 
 const int SENSOR_PORTA = 32;
 const int RELE = 12;
@@ -25,6 +26,7 @@ unsigned long int timeWithoutActivity = -(hibernationTime); //= 0 // Para começ
 unsigned long int currentProgramTime = 0;
 unsigned long int timeDoorWasOpened = 0;
 unsigned long int lastCloseDoorTime = 0;
+unsigned long int alertDoorTime = -8000;
 
 uint8_t hour = 0;
 uint8_t minute = 0;
@@ -51,10 +53,12 @@ char matrixKeyBoard[rows][columns] = {
 byte rowPins[rows] = {4, 18, 19, 33};
 byte columnPins[columns] = {25, 26, 27, 13};
 
+HardwareSerial mySoftwareSerial(0);
+
 Keypad KeyBoard = Keypad(makeKeymap(matrixKeyBoard), rowPins, columnPins, rows, columns);
 RTC_DS3231 Rtc;
 DateTime now;
-// DFRobotDFPlayerMini myDFPlayer;
+DFRobotDFPlayerMini myDFPlayer;
 
 LoginDataManager Manager;
 Oled Screen;
@@ -117,7 +121,7 @@ void setup()
 
   Screen.begin(&Manager);
 
-  Serial.begin(115200);
+  // Serial.begin(115200);
 
   Screen.showLogo();
   delay(2000);
@@ -144,36 +148,23 @@ void setup()
   pinMode(RELE, OUTPUT);
   pinMode(SENSOR_PORTA, INPUT);
 
-  /*
-    PlayerMP3.begin(9600, SERIAL_8N1, 3, 1);
-    if (!myDFPlayer.begin(PlayerMP3))
-    {
-    Display.clearDisplay();
-    Display.setTextSize(1);
-    Display.setTextColor(WHITE);
-    Display.setCursor(10, 10);
-    Display.print("Falha Player MP3");
-    Display.display();
-    delay(3000);
-    } else {
-    //Definicoes iniciais MP3
-    myDFPlayer.setTimeOut(500); //Timeout serial 500ms
-    myDFPlayer.volume(30); //Volume
-    myDFPlayer.EQ(0); //Equalizacao normal
+  mySoftwareSerial.begin(9600, SERIAL_8N1, 3, 1);
+  
+  if (!myDFPlayer.begin(mySoftwareSerial))
+  {
+    Screen.showMP3Fail();
+    while (1);
+  }
+  else
+  {
+    // Definicoes iniciais MP3
+    myDFPlayer.setTimeOut(500); // Timeout serial 500ms
+    myDFPlayer.volume(30);      // Volume
+    myDFPlayer.EQ(0);           // Equalizacao normal
     myDFPlayer.stop();
-    }
+  }
 
-    myDFPlayer.play(1);
-
-    Display.clearDisplay();
-    Display.display();
-    Display.setTextSize(1);
-    Display.setTextColor(WHITE);
-    Display.setCursor(10, 15);
-    Display.print("Iniciando o sistema");
-    Display.display();
-    delay(1000);
-  */
+  myDFPlayer.play(1);
 }
 
 void loop()
@@ -186,8 +177,6 @@ void loop()
 
   char typedCharacter = KeyBoard.getKey();
 
-
-
   if (currentProgramTime - timeWithoutActivity >= hibernationTime)
   {
     isHibernation = true;
@@ -196,7 +185,6 @@ void loop()
   {
     isHibernation = false;
   }
-
 
   if (digitalRead(SENSOR_PORTA) == LOW)
   {
@@ -233,6 +221,12 @@ void loop()
   else
   {
     Screen.showOpenDoor();
+
+    if (currentProgramTime - alertDoorTime >= 8000)
+    {
+      myDFPlayer.play(4);
+      alertDoorTime = currentProgramTime;
+    }
   }
 
   if (typedCharacter)
@@ -243,7 +237,8 @@ void loop()
       return;
     }
 
-    if(typedCharacter == '*'){
+    if (typedCharacter == '*')
+    {
       typedPassword = "";
       typedCharacterCounter = 0;
       timeWithoutActivity = -(hibernationTime);
@@ -270,7 +265,7 @@ void loop()
       digitalWrite(RELE, LOW);
 
       DeviceSettings.settings();
-      
+
       typedPassword = "";
       typedCharacterCounter = 0;
       timeWithoutActivity = -(hibernationTime);
@@ -287,6 +282,7 @@ void loop()
       Screen.showLoginAccepted(userAccepted);
 
       digitalWrite(RELE, HIGH);
+      myDFPlayer.play(2);
       delay(1000);
       digitalWrite(RELE, LOW);
 
@@ -301,6 +297,7 @@ void loop()
     delay(1000);
 
     wrongPasswordCounter++;
+    myDFPlayer.play(3);
 
     if (wrongPasswordCounter == 5)
     {
