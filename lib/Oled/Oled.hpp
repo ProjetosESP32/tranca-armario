@@ -66,6 +66,8 @@ public:
 
   void showRtcFail();
 
+  void showMP3Fail();
+
   void showTypedKey(String typedPassword);
 
   void showHomeScreen(uint8_t hour, uint8_t minute, uint8_t second, uint8_t day, uint8_t month, uint16_t year, String labName);

@@ -74,6 +74,21 @@ void Oled::showRtcFail()
   Display.display();
 }
 
+void Oled::showMP3Fail()
+{
+
+  Display.clearDisplay();
+  Display.setTextSize(2);
+  Display.setTextColor(WHITE);
+
+  Display.setCursor(20, 25);
+  Display.print("MP3 FAIL");
+
+  Display.display();
+
+
+}
+
 void Oled::showTypedKey(String typedPassword = "")
 {
   uint8_t lastCharacterIndex = typedPassword.length() - 1;
