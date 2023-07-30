@@ -28,7 +28,7 @@ public:
 
   void subtractorValidity();
 
-  int comparePasswords(String passwordTyped);
+  int comparePasswords(String passwordTyped, int idUser);
 
   void removeUser(uint8_t id_remove);
 

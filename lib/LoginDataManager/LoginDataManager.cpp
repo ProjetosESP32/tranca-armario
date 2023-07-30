@@ -50,9 +50,18 @@ int LoginDataManager::spiffsRead()
   file.close();
   return _numberOfUsers;
 }
-int LoginDataManager::comparePasswords(String passwordTyped)
+int LoginDataManager::comparePasswords(String passwordTyped, int idUser = -1)
 {
   int passwordNumber = -1; // retorna -1 se nenhuma senha for encontrada
+  
+  if(idUser >=0)
+  {
+    if(passwordTyped.equals(LoginDataManager::userPassword[idUser]))
+    {
+      passwordNumber = idUser;
+    }
+    return passwordNumber;
+  }
 
   for (uint8_t i = 0; i < LoginDataManager::numberOfUsers; i++)
   {

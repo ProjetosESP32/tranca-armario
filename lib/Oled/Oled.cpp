@@ -91,13 +91,20 @@ void Oled::showMP3Fail()
 
 void Oled::showTypedKey(String typedPassword = "")
 {
-  uint8_t lastCharacterIndex = typedPassword.length() - 1;
+  int lenghtkey = typedPassword.length();
+  int8_t lastCharacterIndex = 0;
+
+  if(lenghtkey > 0) lastCharacterIndex = typedPassword.length() - 1;
+
   if (lastCharacterIndex >= 0 && lastCharacterIndex <= 6)
   {
     Display.clearDisplay();
     Display.setTextSize(2);
     Display.setTextColor(WHITE);
     Display.setTextWrap(false);
+
+    Display.setCursor(0,0);
+    Display.print("   Senha:  ");
 
     Display.setCursor(32, 30);
 

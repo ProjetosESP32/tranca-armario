@@ -38,6 +38,7 @@ uint8_t day = 0;
 String typedPassword = "";
 int typedCharacterCounter = 0;
 int wrongPasswordCounter = 0;
+int isSelectedUser = 0;
 
 bool isDoorOpenAlert = false;
 bool isHibernation = false;
@@ -115,6 +116,151 @@ void wrongPasswordManyTimes()
   }
 }
 
+void accessList()
+{
+  int number_users = Manager.getNumberOfUsers();
+  unsigned long int timeoutControl = currentProgramTime;
+  int cursorUserList = 0;
+  int action = 0;
+  bool accessUser = true;
+
+  Screen.showMenuNames(-1, true);
+
+  // Screen.showControls();
+  // delay(2000);
+
+  while (accessUser && currentProgramTime - timeoutControl <= 8000)
+  {
+    char typedCharacter = KeyBoard.getKey();
+    currentProgramTime = millis();
+
+    if (typedCharacter)
+    {
+      timeoutControl = currentProgramTime;
+
+      if (typedCharacter == '2')
+      {
+        if (cursorUserList > 0)
+        {
+          cursorUserList--;
+        }
+        action = 2;
+      }
+      else if (typedCharacter == '*')
+      {
+        accessUser = false;
+        action = 0;
+      }
+      else if (typedCharacter == '8')
+      {
+        if (cursorUserList < (number_users - 1))
+        {
+          cursorUserList++;
+        }
+        action = 8;
+      }
+      else if (typedCharacter == '#')
+      {
+        bool isComparePassword = true;
+        typedPassword = "";
+        while (isComparePassword)
+        {
+          Screen.showTypedKey(typedPassword);
+          typedCharacter = KeyBoard.getKey();
+
+          if (typedCharacter)
+          {
+            if (typedCharacter == '*')
+            {
+              isComparePassword = false;
+              Screen.showMenuNames(-1, true);
+              typedPassword = "";
+              typedCharacterCounter = 0;
+              isComparePassword = false;
+
+              currentProgramTime = millis();
+              timeoutControl = currentProgramTime;
+
+              typedCharacter = KeyBoard.getKey();
+              delay(300);
+            }
+
+            if (typedCharacter != '#' && typedCharacter != '*')
+            {
+              if (typedCharacterCounter < LENGTH_OF_PASSWORD)
+              {
+                typedPassword += typedCharacter;
+                typedCharacterCounter++;
+              }
+
+              if (typedCharacterCounter == LENGTH_OF_PASSWORD)
+              {
+                int feedback = Manager.comparePasswords(typedPassword, cursorUserList);
+
+                if (feedback >= 0)
+                {
+                  String userAccepted = Manager.getNameUser(feedback);
+
+                  Screen.showLoginAccepted(userAccepted);
+
+                  digitalWrite(RELE, HIGH);
+                  myDFPlayer.play(2);
+                  delay(1000);
+                  digitalWrite(RELE, LOW);
+                  isComparePassword = false;
+                  accessUser = false;
+
+                  wrongPasswordCounter = 0;
+                  typedPassword = "";
+                  typedCharacterCounter = 0;
+                  return;
+                }
+                else
+                {
+                  Screen.showLoginDenied();
+                  myDFPlayer.play(3);
+                  delay(1000);
+                  wrongPasswordCounter++;
+
+                  typedPassword = "";
+                  typedCharacterCounter = 0;
+                }
+
+                if (wrongPasswordCounter >= 8)
+                  return;
+              }
+            }
+          }
+        }
+        action = 0;
+      }
+      else
+      {
+        action = 0;
+      }
+    }
+    if (KeyBoard.getState() == HOLD)
+    {
+      timeoutControl = currentProgramTime;
+      if (action == 8)
+      {
+        if (cursorUserList < (number_users - 1))
+        {
+          cursorUserList++;
+        }
+      }
+      else if (action == 2)
+      {
+        if (cursorUserList > 0)
+        {
+          cursorUserList--;
+        }
+      }
+    }
+    Screen.showMenuNames(cursorUserList, false);
+  }
+}
+
 void setup()
 {
   DeviceSettings.init(&KeyBoard, &Manager, &Rtc, &Screen);
@@ -149,11 +295,12 @@ void setup()
   pinMode(SENSOR_PORTA, INPUT);
 
   mySoftwareSerial.begin(9600, SERIAL_8N1, 3, 1);
-  
+
   if (!myDFPlayer.begin(mySoftwareSerial))
   {
     Screen.showMP3Fail();
-    while (1);
+    while (1)
+      ;
   }
   else
   {
@@ -215,7 +362,14 @@ void loop()
     }
     else
     {
-      Screen.showTypedKey(typedPassword);
+      // Screen.showTypedKey(typedPassword);
+
+      accessList();
+      timeWithoutActivity = -(hibernationTime);
+      if (wrongPasswordCounter >= 8)
+      {
+        wrongPasswordManyTimes();
+      }
     }
   }
   else
@@ -231,7 +385,8 @@ void loop()
 
   if (typedCharacter)
   {
-
+    timeWithoutActivity = currentProgramTime;
+    /*
     if (typedCharacter == '#')
     {
       return;
@@ -307,5 +462,6 @@ void loop()
     typedPassword = "";
     typedCharacterCounter = 0;
     timeWithoutActivity = -(hibernationTime);
+    */
   }
 }
