@@ -21,6 +21,7 @@ const unsigned int hibernationTime = 20000;
 const unsigned long int restartTime = 1210000000; // Duas semanas -> reset para garantir estabilidade
 const unsigned int maxOpenDoorTime = 30000;
 const unsigned int updateTimeInterval = 500;
+const unsigned int timeBetweenVoiceCommand = 10000;
 
 unsigned long int timeWithoutActivity = -(hibernationTime); //= 0 // Para começar na tela de hibernação
 unsigned long int currentProgramTime = 0;
@@ -87,6 +88,10 @@ void handleTime()
 void wrongPasswordManyTimes()
 {
   bool isRecovery = true;
+  typedPassword = "";
+  typedCharacterCounter = 0;
+
+  Screen.showLockedLock(" ");
 
   while (isRecovery)
   {
@@ -99,11 +104,6 @@ void wrongPasswordManyTimes()
         typedPassword += typedCharacter;
         typedCharacterCounter++;
       }
-      else
-      {
-        typedPassword = "";
-        typedCharacterCounter = 0;
-      }
     }
 
     Screen.showLockedLock(typedPassword);
@@ -113,6 +113,11 @@ void wrongPasswordManyTimes()
       isRecovery = false;
       wrongPasswordCounter = 0;
     }
+    if (typedCharacterCounter == LENGTH_OF_PASSWORD_SEC)
+    {
+      typedPassword = "";
+      typedCharacterCounter = 0;
+    }
   }
 }
 
@@ -121,7 +126,7 @@ void accessList()
   int number_users = Manager.getNumberOfUsers();
   unsigned long int timeoutControl = currentProgramTime;
   int cursorUserList = 0;
-  int action = 0;
+  int action = -1;
   bool accessUser = true;
 
   Screen.showMenuNames(-1, true);
@@ -129,7 +134,7 @@ void accessList()
   // Screen.showControls();
   // delay(2000);
 
-  while (accessUser && currentProgramTime - timeoutControl <= 8000)
+  while (accessUser && currentProgramTime - timeoutControl <= 8000 && wrongPasswordCounter < 9)
   {
     char typedCharacter = KeyBoard.getKey();
     currentProgramTime = millis();
@@ -149,6 +154,10 @@ void accessList()
       else if (typedCharacter == '*')
       {
         accessUser = false;
+        action = -1;
+      }
+      else if (typedCharacter == '0')
+      {
         action = 0;
       }
       else if (typedCharacter == '8')
@@ -232,11 +241,11 @@ void accessList()
             }
           }
         }
-        action = 0;
+        action = -1;
       }
       else
       {
-        action = 0;
+        action = -1;
       }
     }
     if (KeyBoard.getState() == HOLD)
@@ -255,6 +264,59 @@ void accessList()
         {
           cursorUserList--;
         }
+      }
+      else if (action == 0)
+      {
+        bool isConfig = true;
+        typedCharacterCounter = 0;
+        typedPassword = "";
+
+        Screen.showSettingsTitle();
+        delay(800);
+
+        while (isConfig && wrongPasswordCounter < 9)
+        {
+          typedCharacter = KeyBoard.getKey();
+
+          Screen.showTypedKey(typedPassword);
+
+          if (typedCharacter)
+          {
+            if (typedCharacter != '*' && typedCharacter != '#')
+            {
+              typedCharacterCounter++;
+
+              typedPassword += typedCharacter;
+
+              if (typedCharacterCounter == LENGTH_OF_PASSWORD)
+              {
+                if (typedPassword == MASTERKEY)
+                {
+                  DeviceSettings.settings();
+                  isConfig = false;
+                  wrongPasswordCounter = 0;
+                }
+                else
+                {
+                  wrongPasswordCounter++;
+                }
+                typedPassword = "";
+                typedCharacterCounter = 0;
+              }
+            }
+            else if (typedCharacter == '*')
+            {
+              isConfig = false;
+              typedPassword = "";
+              typedCharacterCounter = 0;
+            }
+          }
+        }
+
+        currentProgramTime = millis();
+        timeoutControl = currentProgramTime;
+
+        Screen.showMenuNames(-1, true);
       }
     }
     Screen.showMenuNames(cursorUserList, false);
@@ -363,8 +425,8 @@ void loop()
     else
     {
       // Screen.showTypedKey(typedPassword);
-
       accessList();
+
       timeWithoutActivity = -(hibernationTime);
       if (wrongPasswordCounter >= 8)
       {
@@ -376,7 +438,7 @@ void loop()
   {
     Screen.showOpenDoor();
 
-    if (currentProgramTime - alertDoorTime >= 8000)
+    if (currentProgramTime - alertDoorTime >= timeBetweenVoiceCommand)
     {
       myDFPlayer.play(4);
       alertDoorTime = currentProgramTime;

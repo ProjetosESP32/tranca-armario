@@ -10,14 +10,13 @@
 #include <Adafruit_GFX.h>
 #include "Oled.hpp"
 
-
 LoginDataManager data;
 Adafruit_SH1106 Display(21, 22);
 
-bool Oled::begin(LoginDataManager * data)
+bool Oled::begin(LoginDataManager *data)
 {
   Display.begin(SH1106_SWITCHCAPVCC, 0x3C);
-  this-> data = data;
+  this->data = data;
   return true;
 }
 void Oled::showLogo()
@@ -85,8 +84,6 @@ void Oled::showMP3Fail()
   Display.print("MP3 FAIL");
 
   Display.display();
-
-
 }
 
 void Oled::showTypedKey(String typedPassword = "")
@@ -94,7 +91,8 @@ void Oled::showTypedKey(String typedPassword = "")
   int lenghtkey = typedPassword.length();
   int8_t lastCharacterIndex = 0;
 
-  if(lenghtkey > 0) lastCharacterIndex = typedPassword.length() - 1;
+  if (lenghtkey > 0)
+    lastCharacterIndex = typedPassword.length() - 1;
 
   if (lastCharacterIndex >= 0 && lastCharacterIndex <= 6)
   {
@@ -103,7 +101,7 @@ void Oled::showTypedKey(String typedPassword = "")
     Display.setTextColor(WHITE);
     Display.setTextWrap(false);
 
-    Display.setCursor(0,0);
+    Display.setCursor(0, 0);
     Display.print("   Senha:  ");
 
     Display.setCursor(32, 30);
@@ -256,7 +254,13 @@ void Oled::showLoginAccepted(String User)
 void Oled::showLockedLock(String typedPassword = "")
 {
   uint8_t lastCharacterIndex = typedPassword.length() - 1;
-  if (lastCharacterIndex >= 0 && lastCharacterIndex <= 8)
+
+  if (lastCharacterIndex < 0)
+  {
+    lastCharacterIndex = 0;
+  }
+  
+  if (lastCharacterIndex <= 8)
   {
 
     Display.clearDisplay();
@@ -324,6 +328,7 @@ void Oled::showSettingsTitle()
 
   Display.setCursor(17, 20);
   Display.print("SETTINGS");
+
   Display.display();
 }
 
@@ -341,11 +346,11 @@ void Oled::showMenuConfig()
   Display.print("2-Validade");
 
   Display.setCursor(0, 32);
-  //Display.print("3-New User");
+  // Display.print("3-New User");
   Display.print("3-Novo Usu");
 
   Display.setCursor(0, 48);
-  //Display.print("4-Del User");
+  // Display.print("4-Del User");
   Display.print("4-Del Usua");
 
   Display.display();
